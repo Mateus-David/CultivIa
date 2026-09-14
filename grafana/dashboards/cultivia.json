@@ -1,0 +1,513 @@
+{
+  "uid": "cultivia-estufa",
+  "title": "CultivIa — Estufa",
+  "tags": [
+    "cultivia"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "editable": true,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "gauge",
+      "title": "Temperatura",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"temperatura_simulada\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "min": 0,
+          "max": 40,
+          "decimals": 1,
+          "displayName": "Temperatura",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 18
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 35
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "gauge",
+      "title": "Umidade",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"umidade_simulada\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "displayName": "Umidade",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 40
+              },
+              {
+                "color": "green",
+                "value": 60
+              },
+              {
+                "color": "blue",
+                "value": 85
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Modo do Pico",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"modo\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "colorMode": "background",
+        "textMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "joystick": {
+                  "text": "Joystick (enviando)",
+                  "color": "green",
+                  "index": 0
+                },
+                "microfone": {
+                  "text": "Microfone (MQTT pausado)",
+                  "color": "orange",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Última mensagem",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"modo\")\n  |> last()\n  |> map(fn: (r) => ({_time: r._time, _value: int(v: r._time) / 1000000}))"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "none",
+        "textMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "displayName": "Última mensagem",
+          "noValue": "Nunca"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Temperatura ao longo do tempo",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "interval": "5s",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"temperatura_simulada\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: true)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "displayName": "Temperatura ao longo do tempo",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Umidade ao longo do tempo",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "interval": "5s",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"umidade_simulada\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: true)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "displayName": "Umidade ao longo do tempo",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "state-timeline",
+      "title": "Modo e botões",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-cultivia"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"modo\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"botao_a\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"botao_c\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"joystick_sw\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "joystick": {
+                  "text": "Joystick (enviando)",
+                  "color": "green",
+                  "index": 0
+                },
+                "microfone": {
+                  "text": "Microfone (MQTT pausado)",
+                  "color": "orange",
+                  "index": 1
+                },
+                "0": {
+                  "text": "Solto",
+                  "color": "dark-green",
+                  "index": 2
+                },
+                "1": {
+                  "text": "Pressionado",
+                  "color": "red",
+                  "index": 3
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Modo"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Botão A"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Botão C"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "D"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Botão joystick"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -8,7 +8,7 @@ from ssd1306 import SSD1306_I2C
 # ================= Configurações de Rede e MQTT =================
 WIFI_SSID = "moto"
 WIFI_PASSWORD = "12345678"
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "10.80.102.72"
 MQTT_PORT = 1883
 MQTT_TOPIC = "cultivia/teste_estufa/sensores"
 CLIENT_ID = "BitDogLab_CultivIA"
@@ -117,7 +117,7 @@ def main():
                 ultimo_envio_mqtt = agora
             
             # Pequeno delay para a atualização da tela não consumir 100% da CPU
-            time.sleep(0.05)
+            time.sleep(0.01)
             
         except OSError as e:
             print("Erro no loop principal:", e)
