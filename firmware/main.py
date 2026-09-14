@@ -1,15 +1,16 @@
 import time
 import json
 import network
-from machine import Pin, ADC
+from machine import Pin, ADC, SoftI2C
 from umqtt.simple import MQTTClient
+from ssd1306 import SSD1306_I2C
 
 # ================= Configurações de Rede e MQTT =================
-WIFI_SSID = "iPhone de Victor"
-WIFI_PASSWORD = "20200767"
-MQTT_BROKER = "172.20.10.8"
+WIFI_SSID = "moto"
+WIFI_PASSWORD = "12345678"
+MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
-MQTT_TOPIC = "cultivia/sensores"
+MQTT_TOPIC = "cultivia/teste_estufa/sensores"
 CLIENT_ID = "BitDogLab_CultivIA"
 
 # ================= Configuração de Hardware =================
@@ -23,15 +24,20 @@ joy_sw = Pin(22, Pin.IN, Pin.PULL_UP)
 joy_x = ADC(Pin(27))
 joy_y = ADC(Pin(26))
 
+# Inicialização do Display OLED SSD1306
+i2c = SoftI2C(scl=Pin(3), sda=Pin(2), freq=400000)
+oled = SSD1306_I2C(128, 64, i2c, addr=0x3C)
+
+# Lista para armazenar as posições Y do gráfico (largura da tela = 128)
+historico_x = [32] * 128 
+
 # ================= Funções Auxiliares =================
 def aplicar_orientacao_joystick(raw_x, raw_y):
-    # Inverte logicamente os eixos subtraindo do valor máximo (16 bits)
     x = 65535 - raw_x
     y = 65535 - raw_y
     return x, y
 
 def ler_botao(pino):
-    # Retorna 1 se pressionado (LOW), 0 se solto (HIGH)
     return 1 if pino.value() == 0 else 0
 
 def conecta_wifi():
@@ -44,11 +50,29 @@ def conecta_wifi():
             time.sleep(1)
     print("Wi-Fi Conectado. IP:", wlan.ifconfig()[0])
 
+def atualizar_grafico_oled(valor_x):
+    # Mapeia o valor analógico (0-65535) para a altura da tela (63-0)
+    # A inversão ocorre porque o eixo Y do display cresce para baixo
+    y_mapeado = 63 - int((valor_x / 65535.0) * 63)
+    
+    # Atualiza a lista deslocando os valores
+    historico_x.pop(0)
+    historico_x.append(y_mapeado)
+    
+    # Renderiza o display
+    oled.fill(0)
+    oled.text("Eixo X (Temp)", 0, 0)
+    
+    # Desenha o gráfico conectando os pontos da lista com linhas
+    for i in range(127):
+        oled.line(i, historico_x[i], i+1, historico_x[i+1], 1)
+        
+    oled.show()
+
 # ================= Loop Principal =================
 def main():
     conecta_wifi()
     
-    # Inicializa o cliente MQTT
     client = MQTTClient(CLIENT_ID, MQTT_BROKER, port=MQTT_PORT)
     try:
         client.connect()
@@ -57,39 +81,47 @@ def main():
         print("Erro ao conectar no MQTT:", e)
         return
 
+    # Variável para rastrear o último momento em que o MQTT foi enviado
+    ultimo_envio_mqtt = 0
+
     while True:
         try:
-            # Leitura dos botões
-            estado_a = ler_botao(btn_a)
-            estado_b = ler_botao(btn_b)
-            estado_c = ler_botao(btn_c)
-            estado_sw = ler_botao(joy_sw)
-
-            # Leitura e inversão lógica do joystick
+            # Leituras contínuas
             raw_x, raw_y = joy_x.read_u16(), joy_y.read_u16()
             x_corr, y_corr = aplicar_orientacao_joystick(raw_x, raw_y)
 
-            # Estrutura JSON simulando temperatura, umidade, saúde e acionamentos
-            payload = {
-                "temperatura_simulada": x_corr / 65535.0 * 40.0, # Mapeia X para 0-40°C
-                "umidade_simulada": y_corr / 65535.0 * 100.0,    # Mapeia Y para 0-100%
-                "botao_a": estado_a,
-                "botao_b": estado_b,
-                "botao_c": estado_c,
-                "joystick_sw": estado_sw
-            }
+            # Atualiza o gráfico no display frequentemente (animação suave)
+            atualizar_grafico_oled(x_corr)
+
+            # Timer não-bloqueante: Publica no MQTT apenas a cada 2000 milissegundos
+            agora = time.ticks_ms()
+            if time.ticks_diff(agora, ultimo_envio_mqtt) >= 2000:
+                estado_a = ler_botao(btn_a)
+                estado_b = ler_botao(btn_b)
+                estado_c = ler_botao(btn_c)
+                estado_sw = ler_botao(joy_sw)
+                
+                payload = {
+                    "temperatura_simulada": x_corr / 65535.0 * 40.0,
+                    "umidade_simulada": y_corr / 65535.0 * 100.0,
+                    "botao_a": estado_a,
+                    "botao_b": estado_b,
+                    "botao_c": estado_c,
+                    "joystick_sw": estado_sw
+                }
+                
+                mensagem = json.dumps(payload)
+                client.publish(MQTT_TOPIC, mensagem)
+                print("Publicado:", mensagem)
+                
+                ultimo_envio_mqtt = agora
             
-            mensagem = json.dumps(payload)
-            client.publish(MQTT_TOPIC, mensagem)
-            print("Publicado:", mensagem)
-            
-            # Aguarda 2 segundos antes da próxima atualização
-            time.sleep(2)
+            # Pequeno delay para a atualização da tela não consumir 100% da CPU
+            time.sleep(0.05)
             
         except OSError as e:
-            print("Erro de conexão no loop, tentando reconectar...", e)
-            time.sleep(5)
-            # Em aplicações reais, adicione uma rotina robusta de reconexão ao Wi-Fi e MQTT aqui
+            print("Erro no loop principal:", e)
+            time.sleep(2)
 
 if __name__ == "__main__":
     main()
