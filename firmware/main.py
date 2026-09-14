@@ -10,7 +10,7 @@ WIFI_SSID = "moto"
 WIFI_PASSWORD = "12345678"
 MQTT_BROKER = "10.80.102.72"
 MQTT_PORT = 1883
-MQTT_TOPIC = "cultivia/sensores"
+MQTT_TOPIC = "cultivia/teste_estufa/sensores"
 CLIENT_ID = "BitDogLab_CultivIA"
 
 # ================= Configuração de Hardware =================
