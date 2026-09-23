@@ -1,0 +1,23 @@
+/* web/src/app/globals.css — carregado UMA vez pelo layout.tsx.
+   Quase todo o visual está nas classes do Tailwind dentro dos componentes
+   (className="rounded-xl bg-cartao ..."). Aqui ficam só a importação do
+   Tailwind e as CORES do projeto. */
+@import "tailwindcss";
+
+/* @theme cria classes a partir de variáveis. Cada --color-X vira
+   bg-X, text-X, border-X, accent-X...  Ex.: --color-cartao -> bg-cartao.
+   Trocar uma cor aqui muda o site inteiro. */
+@theme {
+  --color-fundo: #0f1a14;        /* fundo da página */
+  --color-cartao: #18261e;       /* fundo dos cards */
+  --color-borda: #2a3d31;        /* linhas e bordas */
+  --color-texto: #e6efe9;        /* texto principal */
+  --color-apagado: #8ba394;      /* texto secundário (rótulos, dicas) */
+  --color-verde: #4ade80;        /* destaque: botões, "ligado", "online" */
+  --color-verde-escuro: #06210f; /* texto em cima do verde */
+  --color-vermelho: #f87171;     /* erro, "offline" */
+}
+
+:root {
+  color-scheme: dark;   /* sliders e barras de rolagem escuros */
+}
