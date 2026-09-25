@@ -1,4 +1,3 @@
-# Bibliotecas Python da API (instaladas no build da imagem, ver api/Dockerfile).
-fastapi==0.115.6          # framework: define as rotas HTTP e valida os dados
-uvicorn[standard]==0.34.0 # servidor que executa o FastAPI e atende as requisições
-paho-mqtt==2.1.0          # cliente MQTT: conversa com o Mosquitto
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+paho-mqtt==2.1.0

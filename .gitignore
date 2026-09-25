@@ -1,16 +1,11 @@
-# Segredos (cada um tem o seu; modelos em .env.example e config.example.py)
 .env
 firmware/**/config.py
-
-# Notas locais do Claude Code
 CLAUDE.md
 
-# Gerados (Node/Next.js)
 node_modules/
 .next/
 web/next-env.d.ts
 *.tsbuildinfo
 
-# Gerados (Python)
 __pycache__/
 *.pyc

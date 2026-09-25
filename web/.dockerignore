@@ -1,3 +1,2 @@
-# Não copiar para a build do Docker: são gerados lá dentro (ou são pesados).
 node_modules
 .next

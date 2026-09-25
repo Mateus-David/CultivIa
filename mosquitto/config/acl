@@ -1,29 +1,17 @@
-# mosquitto/config/acl — QUEM pode publicar/assinar O QUÊ no broker.
-#
-# Lido pelo Mosquitto por causa de `acl_file` em mosquitto.conf. Sem regra
-# explícita, o acesso é NEGADO. Cada `user` abaixo é um login que existe porque
-# o docker-compose.yml cria as senhas no start do container
-# (variáveis MQTT_*_PASSWORD do .env).
-#
-# `topic write` = pode PUBLICAR; `topic read` = pode ASSINAR/receber.
-# "#" no fim = qualquer subtópico daquele nível.
-# Ideia: se um cliente for invadido, ele só faz o que o seu papel permite.
+# write = publica, read = assina. o que não tá aqui é bloqueado
 
-# Placa: publica leituras e estado, recebe comandos.
-# (Repare: NÃO pode publicar comandos — ninguém na rede se passa pelo site.)
+# placas (bitdoglab e esp32 usam o mesmo usuário)
 user esp32
 topic write cultivia/sensores
 topic write cultivia/estado
 topic read cultivia/comandos/#
 
-# API (usada pelo site): recebe leituras e estado, publica comandos.
-# Também é o usuário do healthcheck do Mosquitto (por isso a linha $SYS).
+# api, o $SYS é pro healthcheck do compose
 user api
 topic read cultivia/sensores
 topic read cultivia/estado
 topic write cultivia/comandos/#
 topic read $SYS/broker/version
 
-# Telegraf: só lê as leituras (para gravar no InfluxDB). Não publica nada.
 user telegraf
 topic read cultivia/sensores

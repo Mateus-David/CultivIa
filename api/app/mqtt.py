@@ -1,12 +1,3 @@
-"""MQTT — a conversa da API com a placa (através do Mosquitto).
-
-Dois sentidos:
-  OUVIR  placa -> Mosquitto -> on_message() -> guarda em `memoria`
-  FALAR  rota HTTP -> publicar_comando() -> Mosquitto -> placa
-
-O cliente roda numa thread própria do paho (loop_start), separada das
-requisições HTTP. Quem liga/desliga essa thread é o `lifespan` em main.py.
-"""
 import json
 import time
 
@@ -17,25 +8,19 @@ from . import config
 
 
 class Memoria:
-    """A ÚLTIMA coisa recebida da placa, guardada na RAM do processo.
-
-    Escreve: on_message (abaixo).  Lê: rota GET /estado (routes.py).
-    Se o container reiniciar, isto zera — a placa repopula na próxima
-    mensagem (e cultivia/estado é retido, então chega na hora).
-    """
+    # guarda só a última mensagem que chegou da placa. se o container reiniciar
+    # perde tudo, mas o cultivia/estado é retido então volta na hora
     sensores: dict | None = None
-    sensores_recebidos_em: float | None = None   # time.time() da última leitura
+    sensores_recebidos_em: float | None = None
     dispositivo: dict | None = None
 
     def idade_leitura(self) -> float | None:
-        """Há quantos segundos chegou a última leitura (None = nunca)."""
         if self.sensores_recebidos_em is None:
             return None
         return round(time.time() - self.sensores_recebidos_em, 1)
 
     def placa_online(self) -> bool:
-        """Online = a placa disse online:1 (o Last Will troca para 0 se ela
-        cair) E mandou leitura recentemente."""
+        # a placa tem que ter dito online:1 e mandado leitura faz pouco tempo
         idade = self.idade_leitura()
         return (
             (self.dispositivo or {}).get("online") == 1
@@ -47,22 +32,17 @@ class Memoria:
 memoria = Memoria()
 
 
-# ---------------------------------------------------------------
-# Callbacks: o paho chama estas funções sozinho
-# ---------------------------------------------------------------
 def _on_connect(client, userdata, flags, reason_code, properties):
-    """Chamada a cada (re)conexão. Assinar AQUI garante que a assinatura
-    é refeita automaticamente depois de uma queda."""
+    # assino aqui pq assim ele assina de novo sozinho quando reconecta
     print("MQTT conectado:", reason_code)
     client.subscribe([(config.TOPICO_SENSORES, 0), (config.TOPICO_ESTADO, 0)])
 
 
 def _on_message(client, userdata, msg):
-    """Chamada a cada mensagem dos tópicos assinados."""
     try:
-        dados = json.loads(msg.payload)   # bytes -> dict
+        dados = json.loads(msg.payload)
     except ValueError:
-        return                            # não é JSON: ignora, não derruba a API
+        return
 
     if msg.topic == config.TOPICO_SENSORES:
         memoria.sensores = dados
@@ -71,19 +51,15 @@ def _on_message(client, userdata, msg):
         memoria.dispositivo = dados
 
 
-# ---------------------------------------------------------------
-# Cliente
-# ---------------------------------------------------------------
 cliente = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="cultivia-api")
 cliente.username_pw_set(config.MQTT_USER, config.MQTT_PASSWORD)
 cliente.on_connect = _on_connect
 cliente.on_message = _on_message
-cliente.reconnect_delay_set(min_delay=1, max_delay=15)   # se cair, tenta de 1 s a 15 s
+cliente.reconnect_delay_set(min_delay=1, max_delay=15)
 
 
 def iniciar():
-    """Conecta em segundo plano. Se o broker estiver fora do ar, a API sobe
-    mesmo assim e o paho continua tentando."""
+    # connect_async pra API subir mesmo se o broker ainda não estiver no ar
     cliente.connect_async(config.MQTT_HOST, config.MQTT_PORT)
     cliente.loop_start()
 
@@ -98,13 +74,7 @@ def conectado() -> bool:
 
 
 def publicar_comando(nome: str, payload: dict, retain: bool):
-    """Publica em cultivia/comandos/<nome>.
-
-    qos=1   o broker confirma o recebimento (mais confiável que qos=0).
-    retain  o broker GUARDA a última mensagem do tópico e entrega para quem
-            assinar depois: se a placa reiniciar, recebe o último comando e
-            volta ao estado certo.
-    """
+    # com retain o broker guarda a mensagem e a placa recebe quando conectar
     info = cliente.publish(
         f"{config.TOPICO_COMANDOS}/{nome}", json.dumps(payload), qos=1, retain=retain
     )

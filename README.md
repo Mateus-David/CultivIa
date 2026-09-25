@@ -3,58 +3,54 @@
 Monitoramento e controle de estufa com IoT. Uma placa (**BitDogLab** ou
 **ESP32**, em MicroPython) envia leituras por Wi-Fi via **MQTT**. No
 computador, uma stack **Telegraf + InfluxDB + Grafana** guarda o histórico,
-e um site **Next.js** conversa com uma **API FastAPI** para mostrar o estado
-e mandar comandos para a placa.
+e um site **Next.js** (com uma **API FastAPI** por trás) define a temperatura
+e a umidade ideais da placa e mostra o dashboard do Grafana.
 
 ```mermaid
 flowchart LR
-    Placa["Placa<br/>MicroPython"] <-- "MQTT (Wi-Fi)" --> Mosquitto
+    Placa["Bitdoglab"] <-- "MQTT (Wi-Fi)" --> Mosquitto(Broker Mosquitto)
     subgraph Docker Compose
-        Mosquitto --> Telegraf --> InfluxDB --> Grafana
-        Web["web<br/>Next.js :8080"] -- "/api" --> API["api<br/>FastAPI"]
+        Mosquitto(Broker Mosquitto) --> Telegraf --> InfluxDB --> Grafana
+        Web["NextJS - React"] -- "/api" --> API["FastAPI"]
         API <--> Mosquitto
     end
     Navegador --> Web
-    Navegador -. "iframe :3000" .-> Grafana
+    Navegador --> Grafana
 ```
 
 ## Estrutura
 
 ```
 CultivIa/
-├── firmware/                 código das placas (ver firmware/README.md)
-│   ├── bitdoglab/            joystick + OLED
-│   ├── esp32/                simula sensores e obedece comandos do site
+├── firmware/                 código das placas, fizemos uma versão com esp e uma com bitdoglab (ambas MicroPy)
+│   ├── bitdoglab/            joystick (sensores simulados) + OLED + alertas; recebe os alvos do site
+│   ├── esp32/                simula sensores sem nenhum adc, so o uma função(placa alternativa)
 │   └── lib/                  bibliotecas MicroPython (umqtt, ssd1306)
 │
 ├── api/                      FastAPI: ponte HTTP <-> MQTT
 │   └── app/
 │       ├── main.py           cria o app e liga o MQTT
-│       ├── config.py         variáveis de ambiente e tópicos
-│       ├── mqtt.py           cliente MQTT + memória da última leitura
-│       ├── auth.py           confere o token
+│       ├── config.py         configura as variáveis e topicos
+│       ├── mqtt.py           conecta MQTT + memória da última leitura
 │       ├── schemas.py        formato dos JSON (validação)
 │       └── routes.py         rotas HTTP
 │
 ├── web/                      Next.js + TypeScript + Tailwind
 │   └── src/
-│       ├── app/              rotas (App Router); cada tela tem sua pasta
-│       │   ├── (painel)/     rota "/"  (parênteses não entram na URL)
-│       │   │   ├── page.tsx
-│       │   │   └── _components/   usados só pelo painel: LeiturasCard...
-│       │   └── login/        rota "/login"
+│       ├── app/              rotas, cada página é uma pasta
+│       │   ├── icon.svg      ícone da aba (mesmo desenho da logo)
+│       │   └── (painel)/     rota "/"
 │       │       ├── page.tsx
-│       │       └── _components/   LoginForm
-│       ├── components/       usados por MAIS de uma tela
-│       │   └── ui/           peças genéricas: Card, Button, Toggle, Slider...
+│       │       └── _components/   Logo, ParametrosCard, GrafanaCard
+│       ├── components/ui/    peças genéricas: Card, Button, Slider
 │       ├── hooks/            lógica reutilizável: useEstado, useComando
-│       └── lib/              api.ts, types.ts, token.ts, ...
+│       └── lib/              api.ts, types.ts
 │
-├── mosquitto/config/         broker: mosquitto.conf + acl (permissões)
+├── mosquitto/config/         broker: mosquitto.conf + permissões
 ├── telegraf/                 MQTT -> InfluxDB
 ├── grafana/                  datasource e dashboard provisionados
 ├── docker-compose.yml
-└── .env.example              modelo dos segredos (copie para .env)
+└── .env.example              modelo das senhas e segredos (copie para .env)
 ```
 
 ## Subir tudo
@@ -66,12 +62,10 @@ docker compose up -d --build
 
 | Serviço | Endereço |
 |---|---|
-| Site | `http://<IP>:8080` (pede o `API_TOKEN` do `.env`) |
+| Site | `http://<IP>:8080` |
 | Grafana | `http://<IP>:3000` |
 | API (docs automáticas) | `http://<IP>:8000/docs` |
 | InfluxDB | `http://<IP>:8086` |
-
-Por SSH: `ssh -L 8080:localhost:8080 -L 3000:localhost:3000 usuario@servidor`.
 
 Depois grave o firmware na placa: [firmware/README.md](firmware/README.md).
 
@@ -81,6 +75,7 @@ Depois grave o firmware na placa: [firmware/README.md](firmware/README.md).
 
 ```json
 {"modo": "joystick", "temperatura_simulada": 25.3, "umidade_simulada": 61.0,
+ "temperatura_ideal": 25.0, "umidade_ideal": 50.0,
  "botao_a": 0, "botao_c": 0, "joystick_sw": 0}
 ```
 
@@ -90,22 +85,24 @@ Dois caminhos consomem essa mensagem:
 - **Tempo real:** a API guarda a última mensagem na memória; o site pergunta
   `GET /api/estado` a cada 2 s.
 
-**Comando (tela → placa).** O site faz `POST /api/...`, a API valida e publica
-em `cultivia/comandos/<ventilador|bomba|luz|setpoint|envio>`. A placa aplica e
-confirma em `cultivia/estado` (mensagem retida; o Last Will publica
-`{"online":0}` se ela cair).
+**Parâmetros (tela → placa).** O site faz `POST /api/setpoint` com
+`{"temperatura": 28, "umidade": 60}`; a API valida (0–50 °C, 0–100 %) e publica
+em `cultivia/comandos/setpoint` com retain, então uma placa desligada recebe o
+valor quando conectar. A placa aplica e confirma em `cultivia/estado`
+(mensagem retida; o Last Will publica `{"online":0}` se ela cair). Os alvos
+também podem ser mudados nos botões da BitDogLab, e o site acompanha.
 
 ## Segurança
 
 - O Mosquitto exige usuário/senha (`esp32`, `api`, `telegraf`, senhas no `.env`)
   e tem ACL por tópico (`mosquitto/config/acl`).
-- O site exige o `API_TOKEN`; a API confere em toda rota exceto `/health`.
-- A bomba desliga sozinha após 60 s no firmware e o comando dela não é retido.
+- O site e a API **não têm login**: qualquer um na rede muda os parâmetros.
+  Use só em rede local.
 - O Grafana com acesso anônimo de leitura é só para rede local.
 
 ## Desenvolvimento do site
 
-Precisa de Node.js 20.9 ou mais novo (`node -v`).
+Precisa de Node.js 20.9 ou mais novo
 
 ```bash
 cd web
@@ -114,4 +111,4 @@ npm run dev          # http://localhost:3001, /api vai para localhost:8000
 npm run typecheck    # confere os tipos TypeScript
 ```
 
-A API precisa estar rodando (`docker compose up -d api`).
+A API precisa estar rodando 
