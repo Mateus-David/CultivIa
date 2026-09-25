@@ -1,0 +1,17 @@
+# write = publica, read = assina. o que não tá aqui é bloqueado
+
+# placas (bitdoglab e esp32 usam o mesmo usuário)
+user esp32
+topic write cultivia/sensores
+topic write cultivia/estado
+topic read cultivia/comandos/#
+
+# api, o $SYS é pro healthcheck do compose
+user api
+topic read cultivia/sensores
+topic read cultivia/estado
+topic write cultivia/comandos/#
+topic read $SYS/broker/version
+
+user telegraf
+topic read cultivia/sensores

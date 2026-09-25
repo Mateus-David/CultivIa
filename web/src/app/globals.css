@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* cores do site, cada --color-x vira bg-x, text-x, border-x... */
+@theme {
+  --color-fundo: #0f1a14;
+  --color-cartao: #18261e;
+  --color-borda: #2a3d31;
+  --color-texto: #e6efe9;
+  --color-apagado: #8ba394;
+  --color-verde: #4ade80;
+  --color-verde-escuro: #06210f;
+  --color-vermelho: #f87171;
+}
+
+:root {
+  color-scheme: dark;
+}

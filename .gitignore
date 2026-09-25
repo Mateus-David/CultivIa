@@ -1,2 +1,11 @@
 .env
+firmware/**/config.py
 CLAUDE.md
+
+node_modules/
+.next/
+web/next-env.d.ts
+*.tsbuildinfo
+
+__pycache__/
+*.pyc

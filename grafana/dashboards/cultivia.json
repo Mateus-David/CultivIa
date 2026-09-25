@@ -6,7 +6,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "refresh": "5s",
   "time": {
@@ -58,7 +58,7 @@
         "defaults": {
           "unit": "celsius",
           "min": 0,
-          "max": 40,
+          "max": 50,
           "decimals": 1,
           "displayName": "Temperatura",
           "thresholds": {
@@ -282,21 +282,30 @@
             "uid": "influxdb-cultivia"
           },
           "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"temperatura_simulada\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: true)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"temperatura_ideal\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: true)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
         }
       ],
       "options": {
         "legend": {
-          "showLegend": false
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
         },
         "tooltip": {
-          "mode": "single"
+          "mode": "multi"
         }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
           "decimals": 1,
-          "displayName": "Temperatura ao longo do tempo",
           "color": {
             "mode": "fixed",
             "fixedColor": "orange"
@@ -307,7 +316,57 @@
             "spanNulls": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Temperatura"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ideal"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.lineInterpolation",
+                "value": "stepAfter"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -333,21 +392,30 @@
             "uid": "influxdb-cultivia"
           },
           "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"umidade_simulada\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: true)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-cultivia"
+          },
+          "query": "from(bucket: \"cultivia\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"estufa\" and r._field == \"umidade_ideal\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: true)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
         }
       ],
       "options": {
         "legend": {
-          "showLegend": false
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
         },
         "tooltip": {
-          "mode": "single"
+          "mode": "multi"
         }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "decimals": 1,
-          "displayName": "Umidade ao longo do tempo",
           "color": {
             "mode": "fixed",
             "fixedColor": "blue"
@@ -358,7 +426,57 @@
             "spanNulls": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Umidade"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ideal"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.lineInterpolation",
+                "value": "stepAfter"
+              }
+            ]
+          }
+        ]
       }
     },
     {

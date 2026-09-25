@@ -7,12 +7,29 @@ services:
     restart: unless-stopped
     ports:
       - "1883:1883"
+    environment:
+      MQTT_ESP32_PASSWORD: ${MQTT_ESP32_PASSWORD}
+      MQTT_API_PASSWORD: ${MQTT_API_PASSWORD}
+      MQTT_TELEGRAF_PASSWORD: ${MQTT_TELEGRAF_PASSWORD}
+    # gera o arquivo de senhas a partir do .env toda vez que sobe, assim nenhuma senha fica no repo
+    # ($$ é pro compose não trocar a variável, quem troca é o sh dentro do container)
+    command:
+      - sh
+      - -c
+      - |
+        rm -f /mosquitto/passwd &&
+        mosquitto_passwd -b -c /mosquitto/passwd esp32 "$$MQTT_ESP32_PASSWORD" &&
+        mosquitto_passwd -b /mosquitto/passwd api "$$MQTT_API_PASSWORD" &&
+        mosquitto_passwd -b /mosquitto/passwd telegraf "$$MQTT_TELEGRAF_PASSWORD" &&
+        chown mosquitto:mosquitto /mosquitto/passwd &&
+        exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
     volumes:
       - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config/acl:/mosquitto/config/acl:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
     healthcheck:
-      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/broker/version", "-C", "1", "-W", "3", "-i", "healthcheck"]
+      test: ["CMD-SHELL", "mosquitto_sub -u api -P \"$$MQTT_API_PASSWORD\" -t '$$SYS/broker/version' -C 1 -W 3 -i healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,6 +40,7 @@ services:
     restart: unless-stopped
     ports:
       - "8086:8086"
+    # essas INIT só valem na primeira vez, com o volume vazio
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USERNAME}
@@ -49,6 +67,7 @@ services:
       INFLUX_ORG: ${INFLUX_ORG}
       INFLUX_BUCKET: ${INFLUX_BUCKET}
       MQTT_TOPIC: ${MQTT_TOPIC}
+      MQTT_TELEGRAF_PASSWORD: ${MQTT_TELEGRAF_PASSWORD}
     volumes:
       - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     depends_on:
@@ -67,6 +86,10 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      # pro dashboard abrir no iframe do site sem login (só leitura, ok pq é rede local)
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       INFLUX_TOKEN: ${INFLUX_TOKEN}
       INFLUX_ORG: ${INFLUX_ORG}
       INFLUX_BUCKET: ${INFLUX_BUCKET}
@@ -77,6 +100,31 @@ services:
     depends_on:
       influxdb:
         condition: service_healthy
+
+  api:
+    build: ./api
+    container_name: cultivia-api
+    restart: unless-stopped
+    # deixei a 8000 aberta pro npm run dev conseguir acessar
+    ports:
+      - "8000:8000"
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      MQTT_USER: api
+      MQTT_PASSWORD: ${MQTT_API_PASSWORD}
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    container_name: cultivia-web
+    restart: unless-stopped
+    ports:
+      - "8080:3000"
+    depends_on:
+      - api
 
 volumes:
   mosquitto-data:
