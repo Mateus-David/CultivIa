@@ -5,12 +5,17 @@ export type Setpoint = {
   umidade: number;
 };
 
+// cada placa manda um pedaço: fans, bomba, umidade_ar e solo_raw só vêm da estufa
 export type Sensores = {
   modo?: string;
-  temperatura_simulada?: number;
-  umidade_simulada?: number;
+  temperatura?: number;
+  umidade?: number;
   temperatura_ideal?: number;
   umidade_ideal?: number;
+  umidade_ar?: number;
+  solo_raw?: number;
+  fans?: number; // % de velocidade
+  bomba?: number; // % de velocidade
 };
 
 // quando a placa cai o Last Will manda só {"online": 0}, por isso o setpoint é opcional

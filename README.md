@@ -1,14 +1,16 @@
 # CultivIa
 
-Monitoramento e controle de estufa com IoT. Uma placa (**BitDogLab** ou
-**ESP32**, em MicroPython) envia leituras por Wi-Fi via **MQTT**. No
+Monitoramento e controle de estufa com IoT. Uma **ESP32** lê a temperatura,
+a umidade do ar e a umidade do solo, controla os fans e a bomba d'água e envia
+tudo via **MQTT** pelo Wi-Fi (também dá pra usar a
+**BitDogLab** ou uma ESP32 simulada, em MicroPython). No
 computador, uma stack **Telegraf + InfluxDB + Grafana** guarda o histórico,
 e um site **Next.js** (com uma **API FastAPI** por trás) define a temperatura
 e a umidade ideais da placa e mostra o dashboard do Grafana.
 
 ```mermaid
 flowchart LR
-    Placa["Bitdoglab"] <-- "MQTT (Wi-Fi)" --> Mosquitto(Broker Mosquitto)
+    Placa["ESP32 da estufa"] <-- "MQTT (Wi-Fi)" --> Mosquitto(Broker Mosquitto)
     subgraph Docker Compose
         Mosquitto(Broker Mosquitto) --> Telegraf --> InfluxDB --> Grafana
         Web["NextJS - React"] -- "/api" --> API["FastAPI"]
@@ -23,6 +25,7 @@ flowchart LR
 ```
 CultivIa/
 ├── firmware/                 código das placas, fizemos uma versão com esp e uma com bitdoglab (ambas MicroPy)
+│   ├── estufa/               ESP32 real (Arduino IDE): AHT10 + solo + fans + bomba
 │   ├── bitdoglab/            joystick (sensores simulados) + OLED + alertas; recebe os alvos do site
 │   ├── esp32/                simula sensores sem nenhum adc, so o uma função(placa alternativa)
 │   └── lib/                  bibliotecas MicroPython (umqtt, ssd1306)
@@ -71,13 +74,17 @@ Depois grave o firmware na placa: [firmware/README.md](firmware/README.md).
 
 ## Como os dados andam
 
-**Leitura (placa → tela).** A placa publica em `cultivia/sensores` a cada 2 s:
+**Leitura (placa → tela).** A placa publica em `cultivia/sensores` a cada 2 s
+(na estufa, `umidade` é a do solo e `fans`/`bomba` são a velocidade em %):
 
 ```json
-{"modo": "joystick", "temperatura_simulada": 25.3, "umidade_simulada": 61.0,
- "temperatura_ideal": 25.0, "umidade_ideal": 50.0,
- "botao_a": 0, "botao_c": 0, "joystick_sw": 0}
+{"modo": "estufa", "temperatura": 26.4, "umidade": 52.0, "umidade_ar": 61.0,
+ "solo_raw": 2116, "temperatura_ideal": 25, "umidade_ideal": 60,
+ "fans": 58, "bomba": 90}
 ```
+
+A BitDogLab manda `"modo": "joystick"` e os botões no lugar de `umidade_ar`,
+`solo_raw`, `fans` e `bomba`.
 
 Dois caminhos consomem essa mensagem:
 

@@ -72,10 +72,18 @@ Simplificamos o site e deixamos a BitDogLab bem mais completa.
 - Reescrevemos os comentários pra ficarem curtos e diretos
 - Criamos a logo (`web/src/app/icon.svg`, com uma versão em `logo.png`)
 
+### 5. Estufa de verdade (05/11)
+
+- Nova placa em `firmware/estufa/` (ESP32 na Arduino IDE) com sensores reais: AHT10 (temperatura e umidade do ar) e sensor capacitivo de umidade do solo
+- Controla 2 fans de ventilação e a bomba d'água por PWM: os fans aceleram quanto mais quente que o alvo, e a bomba liga em pulsos de 5 s (mais rápida quanto mais seco) com 30 s de espera pra água infiltrar
+- A ESP e o PC ficam na mesma rede Wi-Fi (hotspot do celular), e a ESP manda os dados pro broker no IP do PC
+- O controle roda na placa, então continua funcionando se o PC desligar. Os alvos vêm do site (mesmo tópico de setpoint) ou da Serial
+- As leituras passaram a se chamar `temperatura` e `umidade` (antes `*_simulada`) em todas as placas, no Telegraf, no Grafana e no site. Também foram adicionados `umidade_ar`, `solo_raw`, `fans` e `bomba`
+
 ## Como está funcionando agora
 
 ```
-BitDogLab --MQTT--> Mosquitto --> Telegraf --> InfluxDB --> Grafana
+ESP32 da estufa --MQTT--> Mosquitto --> Telegraf --> InfluxDB --> Grafana
                         ^   |
                         |   v
                    API (FastAPI) <--> Site (Next.js) <--> navegador
@@ -83,13 +91,14 @@ BitDogLab --MQTT--> Mosquitto --> Telegraf --> InfluxDB --> Grafana
 
 | Tópico | Quem publica | Pra quê |
 |---|---|---|
-| `cultivia/sensores` | placa, a cada 2 s | leituras (vai pro InfluxDB e pra API) |
+| `cultivia/sensores` | placa, a cada 2 s | leituras e velocidade dos fans/bomba (vai pro InfluxDB e pra API) |
 | `cultivia/estado` | placa, retido | online + alvos que a placa está usando |
 | `cultivia/comandos/setpoint` | API, retido | alvos definidos no site |
 
 ## O que falta / pendências
 
-- Ligar sensores de verdade no lugar do joystick e da simulação
+- Painéis no Grafana pra umidade do ar e velocidade dos fans e da bomba
+- Guardar a calibração do sensor de solo (`D`/`W`) na memória da ESP
 - Não dá pra ligar as duas placas juntas, porque as duas publicam no mesmo `cultivia/estado`
 - O commit `d128d4a` ainda tem a senha antiga do Wi-Fi no histórico do git
 - Site e Grafana não têm login, então só devem ser usados na rede local

@@ -97,8 +97,8 @@ def simula():
     # mesmo formato da BitDogLab, as chaves tem que bater com o telegraf.conf
     return {
         "modo": "joystick",
-        "temperatura_simulada": round(temperatura, 2),
-        "umidade_simulada": round(umidade, 2),
+        "temperatura": round(temperatura, 2),
+        "umidade": round(umidade, 2),
         "temperatura_ideal": alvo["temperatura"],
         "umidade_ideal": alvo["umidade"],
     }

@@ -327,8 +327,8 @@ def publicar_leitura():
     # as chaves tem que bater com o telegraf.conf
     leitura = {
         "modo": "joystick",
-        "temperatura_simulada": round(temperatura, 2),
-        "umidade_simulada": round(umidade, 2),
+        "temperatura": round(temperatura, 2),
+        "umidade": round(umidade, 2),
         "temperatura_ideal": alvo_temp,
         "umidade_ideal": alvo_umid,
         "botao_a": apertado(btn_a),

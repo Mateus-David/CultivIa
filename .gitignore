@@ -1,5 +1,6 @@
 .env
 firmware/**/config.py
+firmware/**/config.h
 CLAUDE.md
 
 node_modules/
